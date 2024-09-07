@@ -1,0 +1,291 @@
+---
+title: "Project"
+author: "Deborupa Pal"
+date: "2023-12-09"
+output: html_document
+---
+```{r}
+setwd("/Users/deborupapal/Documents/Biostats")
+diabetes_data <- read.csv("dataset.csv")
+```
+```{r}
+missing_values <- sum(is.na(diabetes_data))
+cat("Number of missing values:", missing_values, "\n")
+```
+```{r}
+diabetes_data$Gender <- as.factor(diabetes_data$Gender)
+diabetes_data$CLASS <- as.factor(diabetes_data$CLASS)
+```
+```{r}
+summary_stats <- summary(diabetes_data)
+print(summary_stats)
+```
+```{r}
+install.packages("dplyr")
+
+library(ggplot2)
+library(dplyr)
+
+class_colors <- c("N" = "pink", "Y" = "red", "P" = "green")
+
+# Create Violin Plots for selected variables by CLASS
+selected_variables <- c("AGE", "Urea", "Cr", "HbA1c", "Chol", "TG", "HDL", "LDL", "VLDL", "BMI")
+
+# Create a list to store the ggplot objects
+plots <- list()
+
+# Generate Violin Plots for each selected variable
+for (variable in selected_variables) {
+  plot <- ggplot(diabetes_data, aes_string(x = "CLASS", y = variable, fill = "CLASS")) +
+    geom_violin(alpha = 0.7) +
+    scale_fill_manual(values = class_colors) +
+    labs(title = paste("Violin Plot of", variable, "by CLASS"),
+         x = "CLASS", y = variable) +
+    theme_minimal()
+  
+  plots[[variable]] <- plot
+}
+
+# Display the plots
+plots
+
+```
+```{r}
+# Univariate Analysis: Histograms for continuous variables
+continuous_vars <- c("AGE", "Urea", "Cr", "HbA1c", "Chol", "TG", "HDL", "LDL", "VLDL", "BMI")
+
+par(mfrow = c(3, 4))  # Set up a grid for plots
+
+for (var in continuous_vars) {
+  if (class(diabetes_data[[var]]) == "numeric") {
+    hist_result <- hist(diabetes_data[[var]], main = paste("Histogram of", var), plot = FALSE)
+    print(paste("Summary Statistics for", var, ":"))
+    print(summary(diabetes_data[[var]]))
+    print(hist_result)  # Fix: Change sssprint to print
+  } else {
+    cat("Variable", var, "is not numeric. Consider a different type of plot or transformation.\n")
+  }
+}
+
+```
+```{r}
+# Univariate Analysis: Bar plots for categorical variables
+categorical_vars <- c("Gender", "CLASS")
+
+par(mfrow = c(1, 2))  # Set up a grid for plots
+
+for (var in categorical_vars) {
+  if (class(diabetes_data[[var]]) == "factor") {
+    barplot_result <- barplot(table(diabetes_data[[var]]), main = paste("Barplot of", var), plot = FALSE)
+    print(paste("Frequency Table for", var, ":"))
+    print(table(diabetes_data[[var]]))
+    print(barplot_result)
+  } else {
+    cat("Variable", var, "is not categorical. Consider a different type of plot or transformation.\n")
+  }
+}
+```
+```{r}
+# List of continuous variables
+continuous_vars <- c("AGE", "Urea", "Cr", "HbA1c", "Chol", "TG", "HDL", "LDL", "VLDL", "BMI")
+
+# Loop through each continuous variable
+for (var in continuous_vars) {
+  
+  # Shapiro-Wilk Test
+  shapiro_test <- shapiro.test(diabetes_data[[var]])
+  cat("Shapiro-Wilk Test for", var, "p-value:", shapiro_test$p.value, "\n")
+  
+  # Q-Q Plot
+  qqnorm(diabetes_data[[var]], main = paste("Q-Q Plot of", var))
+  qqline(diabetes_data[[var]], col = 2)
+  dev.new()
+}
+```
+```{r}
+
+kruskal_test_result <- kruskal.test(AGE ~ CLASS, data = diabetes_data)
+
+# Print the results
+print(kruskal_test_result)
+
+# Extract and print the p-value
+p_value <- kruskal_test_result$p.value
+cat("Kruskal-Wallis Test p-value:", p_value, "\n")
+
+# Conduct pairwise comparisons if the overall test is significant
+if (p_value < 0.05) {
+  # Pairwise Wilcoxon rank sum tests with Bonferroni correction
+  pairwise_result <- pairwise.wilcox.test(diabetes_data$AGE, diabetes_data$CLASS, p.adj = "bonferroni")
+  print(pairwise_result)
+}
+```
+```{r}
+# Check if 'Age' is present in the dataset
+if ("Age" %in% names(diabetes_data)) {
+  # Fit the logistic regression model
+  logistic_model <- glm(CLASS ~ Age + Urea + Cr + HbA1c + Chol + TG + HDL + LDL + VLDL + BMI, 
+                        data = diabetes_data, 
+                        family = "binomial")
+  
+  # Display the model summary
+  summary(logistic_model)
+} else {
+  cat("Variable 'Age' not found in the dataset.\n")
+}
+
+```
+```{r}
+# Assuming 'Gender' and 'CLASS' are the categorical variables you want to test
+chi_square_result <- chisq.test(table(diabetes_data$Gender, diabetes_data$CLASS))
+
+# Print the results
+print(chi_square_result)
+
+# Extract and print the p-value
+p_value <- chi_square_result$p.value
+cat("Chi-Square Test p-value:", p_value, "\n")
+
+# Interpret the results based on the p-value
+if (p_value < 0.05) {
+  cat("There is a significant association between Gender and CLASS.\n")
+} else {
+  cat("There is no significant association between Gender and CLASS.\n")
+}
+```
+```{r}
+# Boxplots for continuous variables to check for outliers
+continuous_vars <- c("AGE", "Urea", "Cr", "HbA1c", "Chol", "TG", "HDL", "LDL", "VLDL", "BMI")
+
+par(mfrow = c(3, 4))  # Set up a grid for plots
+
+for (var in continuous_vars) {
+  if (class(diabetes_data[[var]]) == "numeric") {
+    boxplot(diabetes_data[[var]], main = paste("Boxplot of", var), col = "skyblue", border = "black")
+  } else {
+    cat("Variable", var, "is not numeric. Consider a different type of plot or transformation.\n")
+  }
+}
+``` 
+```{r}
+# List of continuous variables
+continuous_vars <- c("AGE", "Urea", "Cr", "HbA1c", "Chol", "TG", "HDL", "LDL", "VLDL", "BMI")
+
+# Loop through each continuous variable
+for (var in continuous_vars) {
+  if (class(diabetes_data[[var]]) == "numeric") {
+    # Calculate the IQR
+    iqr_value <- IQR(diabetes_data[[var]])
+    
+    # Set the threshold for identifying outliers
+    outlier_threshold <- 1.5
+    
+    # Identify outliers
+    outliers <- which(diabetes_data[[var]] < quantile(diabetes_data[[var]], 0.25) - outlier_threshold * iqr_value |
+                        diabetes_data[[var]] > quantile(diabetes_data[[var]], 0.75) + outlier_threshold * iqr_value)
+    
+    # Print the variable name and the indices of outliers
+    if (length(outliers) > 0) {
+      cat("Outliers in variable", var, "at indices:", outliers, "\n")
+      
+      # Replace outliers with the median
+      median_value <- median(diabetes_data[[var]], na.rm = TRUE)
+      diabetes_data[[var]][outliers] <- median_value
+      
+      cat("Outliers replaced with the median in variable", var, "\n")
+    } else {
+      cat("No outliers found in variable", var, "\n")
+    }
+  } else {
+    cat("Variable", var, "is not numeric. Consider a different type of analysis.\n")
+  }
+}
+```
+```{r}
+summary_stats <- summary(diabetes_data[, continuous_vars])
+
+print(summary_stats)
+```
+
+
+```{r}
+# List of continuous variables
+continuous_vars <- c("AGE", "Urea", "Cr", "HbA1c", "Chol", "TG", "HDL", "LDL", "VLDL", "BMI")
+
+# Set up a grid for boxplots
+par(mfrow = c(3, 4))
+
+# Loop through each continuous variable
+for (var in continuous_vars) {
+  if (class(diabetes_data[[var]]) == "numeric") {
+    # Create boxplot after replacing outliers with median
+    boxplot(diabetes_data[[var]], main = paste("Boxplot of", var), outline = FALSE)
+  } else {
+    cat("Variable", var, "is not numeric. Consider a different type of plot or transformation.\n")
+  }
+}
+
+# Reset the plotting layout
+par(mfrow = c(1, 1))
+```
+
+```{r}
+# List of continuous variables
+continuous_vars <- c("AGE", "Urea", "Cr", "HbA1c", "Chol", "TG", "HDL", "LDL", "VLDL", "BMI")
+
+# Create a data frame to store outlier information
+outlier_info <- data.frame(Variable = character(), Outliers = numeric(), stringsAsFactors = FALSE)
+
+# Loop through each continuous variable
+for (var in continuous_vars) {
+  if (class(diabetes_data[[var]]) == "numeric") {
+    # Identify outliers
+    outliers <- which(diabetes_data[[var]] < quantile(diabetes_data[[var]], 0.25) | 
+                        diabetes_data[[var]] > quantile(diabetes_data[[var]], 0.75))
+    
+    # Print the variable name and the number of outliers
+    if (length(outliers) > 0) {
+      cat("Outliers in variable", var, "at indices:", outliers, "\n")
+      
+      # Replace outliers with the median
+      median_value <- median(diabetes_data[[var]], na.rm = TRUE)
+      diabetes_data[[var]][outliers] <- median_value
+      
+      cat("Outliers replaced with the median in variable", var, "\n")
+    } else {
+      cat("No outliers found in variable", var, "\n")
+    }
+    
+    # Store the information in the data frame
+    outlier_info <- rbind(outlier_info, data.frame(Variable = var, Outliers = length(outliers)))
+  } else {
+    cat("Variable", var, "is not numeric. Consider a different type of analysis.\n")
+  }
+}
+```
+```{r}
+#Check for outliers after replacement
+outliers_after <- lapply(diabetes_data[continuous_vars], function(var) {
+  if (class(var) == "numeric") {
+    iqr_value <- IQR(var)
+    outlier_threshold <- 1.5
+    which(var < quantile(var, 0.25) - outlier_threshold * iqr_value |
+            var > quantile(var, 0.75) + outlier_threshold * iqr_value)
+  } else {
+    NULL
+  }
+})
+
+# Filter out NULL results
+outliers_after <- Filter(Negate(is.null), outliers_after)
+
+# Display results
+if (length(outliers_after) == 0) {
+  cat("No outliers found after replacement.\n")
+} else {
+  cat("Outliers still present after replacement in the following variables:\n")
+  for (i in seq_along(outliers_after)) {
+    cat(names(outliers_after)[i], ":", outliers_after[[i]], "\n")
+  }
+}
+```
